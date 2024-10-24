@@ -1,6 +1,16 @@
 // logger.js
 const { createLogger, format, transports } = require('winston');
 const path = require('path');
+const fs = require('fs');
+
+// Путь к папке logs
+const logsDir = path.join(__dirname, 'logs');
+
+// Проверка существования папки logs, если нет — создаём её
+if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+    console.log(`Папка "logs" создана по пути: ${logsDir}`);
+}
 
 // Настройка формата логов
 const logger = createLogger({
@@ -16,10 +26,10 @@ const logger = createLogger({
         })
     ),
     transports: [
-        // Логи в файл ошибок
-        new transports.File({ filename: path.join('logs', 'error.log'), level: 'error' }),
-        // Все логи в отдельный файл
-        new transports.File({ filename: path.join('logs', 'combined.log') }),
+        // Логи ошибок
+        new transports.File({ filename: path.join(logsDir, 'error.log'), level: 'error' }),
+        // Все логи
+        new transports.File({ filename: path.join(logsDir, 'combined.log') }),
     ],
 });
 
