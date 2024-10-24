@@ -1,2 +1,2 @@
-# Discord bot- qt
+# Discord bot - qt
  
