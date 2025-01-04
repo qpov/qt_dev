@@ -1,4 +1,21 @@
 // index.js
+
+// Для работы бота 24/7
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Простой маршрут
+app.get('/', (req, res) => {
+    res.send('Бот работает!');
+});
+
+// Запуск веб-сервера
+app.listen(PORT, () => {
+    console.log(`Веб-сервер запущен на порту ${PORT}`);
+});
+
+
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
