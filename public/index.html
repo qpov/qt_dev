@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Управление Discord Ботом</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Управление Discord Ботом</h1>
+    </header>
+    
+    <main>
+        <section id="status">
+            <h2>Статус Бота</h2>
+            <p id="bot-status">Загрузка...</p>
+        </section>
+
+        <section id="send-command">
+            <h2>Отправить Команду</h2>
+            <input type="text" id="command-input" placeholder="Введите команду">
+            <button id="send-command-button">Отправить</button>
+            <p id="command-response"></p>
+        </section>
+
+        <section id="send-message">
+            <h2>Отправить Сообщение</h2>
+            <input type="text" id="guild-id-input" placeholder="Введите Guild ID">
+            <input type="text" id="message-input" placeholder="Введите сообщение">
+            <button id="send-message-button">Отправить</button>
+            <p id="message-response"></p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Ваше Имя</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

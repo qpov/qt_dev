@@ -7,10 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const commandInput = document.getElementById('command-input');
     const commandResponse = document.getElementById('command-response');
 
+    const sendMessageButton = document.getElementById('send-message-button');
+    const guildIdInput = document.getElementById('guild-id-input');
+    const messageInput = document.getElementById('message-input');
+    const messageResponse = document.getElementById('message-response');
+
     // Функция для получения статуса бота
     const fetchBotStatus = async () => {
         try {
-            const response = await fetch('https://yourdomain.com/api/status');
+            const response = await fetch('/api/status');
             const data = await response.json();
             botStatus.textContent = data.status;
         } catch (error) {
@@ -28,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const response = await fetch('https://yourdomain.com/api/send-command', {
+            const response = await fetch('/api/send-command', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -49,9 +54,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Функция для отправки сообщения в определенный сервер
+    const sendMessage = async () => {
+        const guildId = guildIdInput.value.trim();
+        const message = messageInput.value.trim();
+
+        if (!guildId || !message) {
+            alert('Пожалуйста, введите Guild ID и сообщение');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/send-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ guildId, message }),
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                messageResponse.textContent = 'Сообщение успешно отправлено!';
+                guildIdInput.value = '';
+                messageInput.value = '';
+            } else {
+                messageResponse.textContent = `Ошибка: ${data.error}`;
+            }
+        } catch (error) {
+            messageResponse.textContent = 'Ошибка при отправке сообщения';
+            console.error(error);
+        }
+    };
+
     // Инициализация
     fetchBotStatus();
 
-    // Обработчик события нажатия кнопки
+    // Обработчики событий нажатия кнопок
     sendCommandButton.addEventListener('click', sendCommand);
+    sendMessageButton.addEventListener('click', sendMessage);
 });
