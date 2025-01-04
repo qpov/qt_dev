@@ -1,4 +1,17 @@
 // index.js
+
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('Бот работает!');
+});
+
+app.listen(PORT, () => {
+    console.log(`Express сервер запущен на порту ${PORT}`);
+});
+
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
