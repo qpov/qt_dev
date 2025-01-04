@@ -22,16 +22,16 @@ module.exports = {
     name: Events.ClientReady, // Используйте Events.ClientReady для последних версий discord.js
     once: true,
     async execute(client) {
-        logger.info(`Бот ${client.user.tag} подключен и готов к работе!`);
+        logger.info(`qt ${client.user.tag} подключен и готов к работе!`);
 
         try {
             // Загружаем текущую конфигурацию
             const config = loadConfig();
 
-            // Перебираем все сервера, на которых находится бот
+            // Перебираем все сервера, на которых находится qt
             const servers = client.guilds.cache;
             if (servers.size === 0) {
-                logger.warn('Бот не находится ни на одном сервере.');
+                logger.warn('qt не находится ни на одном сервере.');
                 return;
             }
 
