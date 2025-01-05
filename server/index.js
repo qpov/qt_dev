@@ -5,7 +5,7 @@ require('dotenv').config(); // Загрузка переменных окруж�
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { Client, Collection, GatewayIntentBits, Events, ChannelType, PermissionsBitField } = require('discord.js');
+const { Client, Intents, Collection, GatewayIntentBits, Events, ChannelType, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const logger = require('./logger');
