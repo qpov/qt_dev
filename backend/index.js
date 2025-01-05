@@ -47,17 +47,17 @@ passport.deserializeUser((obj, done) => {
 
 // Routes
 app.get('/api/auth/discord', (req, res, next) => {
-    console.log('Маршрут /api/auth/discord вызван');
+    console.log('Запрос на /api/auth/discord');
     next();
 }, passport.authenticate('discord'));
 
 app.get('/api/auth/discord/callback', (req, res, next) => {
-    console.log('Маршрут /api/auth/discord/callback вызван');
+    console.log('Запрос на /api/auth/discord/callback');
     next();
 }, passport.authenticate('discord', { failureRedirect: '/' }),
     (req, res) => {
-        console.log('Пользователь успешно авторизован');
-        res.redirect('/dashboard'); // Перенаправление на панель управления
+        console.log('Успешная авторизация через Discord');
+        res.redirect('/dashboard');
     }
 );
 
@@ -74,12 +74,12 @@ app.get('/api/auth/logout', (req, res) => {
 });
 
 app.get('/api/auth/user', (req, res) => {
-    console.log('Маршрут /api/auth/user вызван');
+    console.log('Запрос на /api/auth/user');
     if (!req.isAuthenticated()) {
         console.log('Пользователь не авторизован');
         return res.status(401).send('Не авторизован');
     }
-    console.log('Возвращаем данные пользователя:', req.user);
+    console.log('Пользователь авторизован:', req.user);
     res.json(req.user);
 });
 
