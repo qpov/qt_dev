@@ -58,6 +58,11 @@ app.get('/api/auth/user', (req, res) => {
     res.json(req.user);
 });
 
+// Добавление маршрута для проверки статуса
+app.get('/api/status', (req, res) => {
+    res.json({ message: 'API работает корректно!' });
+});
+
 // Запуск сервера
 app.listen(PORT, () => {
     console.log(`Сервер запущен на порту ${PORT}`);
