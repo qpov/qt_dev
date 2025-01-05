@@ -1,104 +1,204 @@
 // server/index.js
 
-require('dotenv').config(); // Загрузка переменных окружения
-
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const { Client, Intents, Collection, GatewayIntentBits, Events, ChannelType, PermissionsBitField } = require('discord.js');
+const session = require('express-session'); // Для сессий
+const bcrypt = require('bcrypt');          // Для хэширования паролей
 const fs = require('fs');
 const path = require('path');
 const logger = require('./logger');
 
-// Инициализация Express приложения
+// -------------------------------------
+// Настройка Express
+// -------------------------------------
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true })); 
+// ↑ Нужно именно urlencoded, т.к. формы HTML шлют данные 
+//   в формате application/x-www-form-urlencoded
 
-// Путь к конфигурационному файлу
-const CONFIG_PATH = path.join(__dirname, 'config.json');
+// Настройка сессий
+app.use(session({
+  secret: 'super_secret_key', // Замените на свой ключ
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24 // сессия на 24 часа
+  }
+}));
 
-// Функции для работы с конфигурацией
-function loadConfig() {
-    if (!fs.existsSync(CONFIG_PATH)) {
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify({}, null, 4));
-    }
-    const data = fs.readFileSync(CONFIG_PATH, 'utf-8');
-    return JSON.parse(data);
+// -------------------------------------
+// Папка со статическими файлами (HTML, CSS, JS, ...)
+// -------------------------------------
+app.use(express.static(path.join(__dirname, 'public')));
+
+// -------------------------------------
+// "База" пользователей - в файле (для примера)
+// -------------------------------------
+const USERS_FILE = path.join(__dirname, 'users.json');
+
+function loadUsers() {
+  if (!fs.existsSync(USERS_FILE)) {
+    fs.writeFileSync(USERS_FILE, JSON.stringify([]));
+  }
+  const data = fs.readFileSync(USERS_FILE, 'utf-8');
+  return JSON.parse(data);
 }
 
-function saveConfig(config) {
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 4));
+function saveUsers(users) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
-// Создание клиента Discord с необходимыми интентами
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates,
-        GatewayIntentBits.GuildMessageReactions,
-    ]
+// -------------------------------------
+// Маршруты HTML-страниц (регистрация, логин)
+// (Можно было бы раздавать их статически, но тут для примера)
+// -------------------------------------
+
+// (Необязательно) Если хотите вернуть index.html на "/"
+app.get('/', (req, res) => {
+  // Вы просто отдаёте статический файл:
+  // res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  // Или что-то свое
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Коллекция для команд
-client.commands = new Collection();
-
-// Загрузка команд из папки commands
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    client.commands.set(command.data.name, command);
-}
-
-// Загрузка обработчиков событий из папки events
-const eventsPath = path.join(__dirname, 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
-
-for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-    const event = require(filePath);
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args));
-    } else {
-        client.on(event.name, (...args) => event.execute(...args));
-    }
-}
-
-// Обработка команд
-client.on('interactionCreate', async interaction => {
-    if (!interaction.isCommand()) return;
-
-    const command = client.commands.get(interaction.commandName);
-
-    if (!command) return;
-
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        logger.error(`Ошибка при выполнении команды ${interaction.commandName}: ${error.stack}`);
-        if (interaction.deferred || interaction.replied) {
-            await interaction.editReply('Произошла ошибка при выполнении команды.');
-        } else {
-            await interaction.reply({ content: 'Произошла ошибка при выполнении команды.', ephemeral: true });
-        }
-    }
+// -------------------------------------
+// Маршрут регистрации (получение формы): /register (GET)
+// (Если вы не используете отдельный register.html)
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'register.html'));
 });
+
+// Маршрут авторизации (получение формы): /login (GET)
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// -------------------------------------
+// Маршрут регистрации (при сабмите формы): /register (POST)
+// -------------------------------------
+app.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  // Проверка
+  if (!username || !password) {
+    return res.status(400).send('Необходимо ввести username и password');
+  }
+
+  const users = loadUsers();
+  const existingUser = users.find(u => u.username === username);
+  if (existingUser) {
+    return res.status(400).send('Пользователь с таким именем уже существует');
+  }
+
+  try {
+    // Хэшируем пароль
+    const hashedPassword = await bcrypt.hash(password, 10);
+    // Создаём нового пользователя
+    const newUser = {
+      username,
+      password: hashedPassword
+    };
+    users.push(newUser);
+    saveUsers(users);
+
+    // Сохраняем пользователя в сессии
+    req.session.user = { username: newUser.username };
+
+    // Редирект на главную страницу /profile или / (на ваш выбор)
+    return res.redirect('/profile');
+  } catch (err) {
+    logger.error(`Ошибка при регистрации: ${err}`);
+    return res.status(500).send('Ошибка сервера при регистрации');
+  }
+});
+
+// -------------------------------------
+// Маршрут логина (при сабмите формы): /login (POST)
+// -------------------------------------
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).send('Необходимо ввести username и password');
+  }
+
+  const users = loadUsers();
+  const user = users.find(u => u.username === username);
+  if (!user) {
+    return res.status(400).send('Неверные учетные данные (пользователь не найден)');
+  }
+
+  try {
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(401).send('Неверный пароль');
+    }
+    // Сохраняем пользователя в сессии
+    req.session.user = { username: user.username };
+
+    return res.redirect('/profile');
+  } catch (err) {
+    logger.error(`Ошибка при логине: ${err}`);
+    return res.status(500).send('Ошибка сервера при логине');
+  }
+});
+
+// -------------------------------------
+// Маршрут профиля (требует авторизации)
+// -------------------------------------
+app.get('/profile', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  res.send(`
+    <h1>Добро пожаловать, ${req.session.user.username}!</h1>
+    <p>Вы авторизованы на сайте, теперь можете управлять ботом.</p>
+    <p><a href="/logout">Выйти</a></p>
+  `);
+});
+
+// -------------------------------------
+// Выход (логаут) - уничтожаем сессию
+// -------------------------------------
+app.get('/logout', (req, res) => {
+  if (req.session) {
+    req.session.destroy(err => {
+      if (err) {
+        logger.error(`Ошибка при logout: ${err}`);
+        return res.status(500).send('Ошибка при завершении сессии');
+      }
+      res.clearCookie('connect.sid');
+      return res.redirect('/');
+    });
+  } else {
+    return res.redirect('/');
+  }
+});
+
+// -------------------------------------
+// Подключение Discord-бота
+// -------------------------------------
+
+// ...ваш код Discord-бота...
+const { Client, GatewayIntentBits } = require('discord.js');
+const client = new Client({ /* ... */ });
+// прочее
 
 // Логин бота
-client.login(process.env.BOT_TOKEN);
+// client.login(process.env.BOT_TOKEN);
 
-// Маршрут для проверки статуса бота
+// -------------------------------------
+// Маршруты для API (управление ботом)
+// -------------------------------------
 app.get('/api/status', (req, res) => {
-    const status = client.isReady() ? 'Бот работает' : 'Бот не запущен';
-    res.json({ status });
+  const status = client.isReady() ? 'Бот работает' : 'Бот не запущен';
+  res.json({ status });
 });
 
 // Маршрут для отправки команды боту
@@ -110,11 +210,8 @@ app.post('/api/send-command', async (req, res) => {
         return res.status(400).json({ success: false, error: 'Нет команды для отправки' });
     }
 
-    // Здесь вы можете определить, как команда будет обрабатываться ботом
-    // Например, отправить сообщение в определенный канал или вызвать команду напрямую
-
     try {
-        // Пример: Отправка сообщения в основной канал (CHANNEL_ID)
+        // Пример отправки сообщения в канал
         const channelId = process.env.CHANNEL_ID;
         const channel = client.channels.cache.get(channelId);
         if (!channel) {
@@ -140,7 +237,14 @@ app.post('/api/send-message', async (req, res) => {
         return res.status(400).json({ success: false, error: 'Необходимо указать guildId и сообщение' });
     }
 
-    // Получение channelId из config.json
+    const configPath = path.join(__dirname, 'config.json');
+    function loadConfig() {
+        if (!fs.existsSync(configPath)) {
+            fs.writeFileSync(configPath, JSON.stringify({}, null, 4));
+        }
+        const data = fs.readFileSync(configPath, 'utf-8');
+        return JSON.parse(data);
+    }
     const config = loadConfig();
     const guildConfig = config[guildId];
     if (!guildConfig || !guildConfig.createRoomChannelId) {
@@ -165,7 +269,9 @@ app.post('/api/send-message', async (req, res) => {
     }
 });
 
-// Запуск Express сервера
+// -------------------------------------
+// Запуск сервера
+// -------------------------------------
 app.listen(PORT, () => {
     logger.info(`Express сервер запущен на порту ${PORT}`);
-});
+  });
