@@ -95,13 +95,6 @@ client.on('interactionCreate', async interaction => {
 // Логин бота
 client.login(process.env.BOT_TOKEN);
 
-// Express маршруты
-
-// Удалите или закомментируйте этот маршрут
-// app.get('/', (req, res) => {
-//     res.send('qt работает!');
-// });
-
 // Маршрут для проверки статуса бота
 app.get('/api/status', (req, res) => {
     const status = client.isReady() ? 'Бот работает' : 'Бот не запущен';
