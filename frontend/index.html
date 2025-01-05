@@ -1,1 +1,30 @@
-<a href="/auth/discord">Войти через Discord</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+</head>
+<body>
+    <h1>Добро пожаловать!</h1>
+    <a href="/api/auth/discord">
+        <button>Войти через Discord</button>
+    </a>
+    <script>
+        fetch('/api/auth/user')
+            .then(response => {
+                if (response.status === 401) {
+                    console.log('Пользователь не авторизован');
+                } else {
+                    return response.json();
+                }
+            })
+            .then(user => {
+                if (user) {
+                    document.body.innerHTML += `<h2>Привет, ${user.username}!</h2>`;
+                }
+            })
+            .catch(console.error);
+    </script>
+</body>
+</html>
