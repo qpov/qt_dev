@@ -6,6 +6,7 @@ const DiscordStrategy = require('passport-discord').Strategy;
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const morgan = require('morgan'); // Логирование запросов
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(morgan('combined')); // Логирование всех запросов
 app.use(session({
     secret: 'root', // Измените это значение
     resave: false,
@@ -30,37 +32,67 @@ passport.use(new DiscordStrategy({
     callbackURL: process.env.DISCORD_CALLBACK_URL,
     scope: ['identify', 'email', 'guilds']
 }, (accessToken, refreshToken, profile, done) => {
-    // Здесь можно сохранять профиль пользователя в БД
+    console.log('Получен профиль пользователя:', profile); // Лог профиля пользователя
     return done(null, profile);
 }));
 
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((obj, done) => done(null, obj));
+passport.serializeUser((user, done) => {
+    console.log('Сериализация пользователя:', user);
+    done(null, user);
+});
+passport.deserializeUser((obj, done) => {
+    console.log('Десериализация пользователя:', obj);
+    done(null, obj);
+});
 
 // Routes
-app.get('/api/auth/discord', passport.authenticate('discord'));
+app.get('/api/auth/discord', (req, res, next) => {
+    console.log('Маршрут /api/auth/discord вызван');
+    next();
+}, passport.authenticate('discord'));
 
-app.get('/api/auth/discord/callback', passport.authenticate('discord', { failureRedirect: '/' }),
+app.get('/api/auth/discord/callback', (req, res, next) => {
+    console.log('Маршрут /api/auth/discord/callback вызван');
+    next();
+}, passport.authenticate('discord', { failureRedirect: '/' }),
     (req, res) => {
+        console.log('Пользователь успешно авторизован');
         res.redirect('/dashboard'); // Перенаправление на панель управления
     }
 );
 
 app.get('/api/auth/logout', (req, res) => {
+    console.log('Маршрут /api/auth/logout вызван');
     req.logout((err) => {
-        if (err) return res.status(500).send('Ошибка выхода');
+        if (err) {
+            console.error('Ошибка при выходе:', err);
+            return res.status(500).send('Ошибка выхода');
+        }
+        console.log('Пользователь успешно вышел');
         res.redirect('/');
     });
 });
 
 app.get('/api/auth/user', (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).send('Не авторизован');
+    console.log('Маршрут /api/auth/user вызван');
+    if (!req.isAuthenticated()) {
+        console.log('Пользователь не авторизован');
+        return res.status(401).send('Не авторизован');
+    }
+    console.log('Возвращаем данные пользователя:', req.user);
     res.json(req.user);
 });
 
-// Добавление маршрута для проверки статуса
+// Тестовый маршрут для проверки работы сервера
 app.get('/api/status', (req, res) => {
+    console.log('Маршрут /api/status вызван');
     res.json({ message: 'API работает корректно!' });
+});
+
+// Обработка ошибок
+app.use((err, req, res, next) => {
+    console.error('Произошла ошибка:', err.stack);
+    res.status(500).send('Что-то пошло не так!');
 });
 
 // Запуск сервера
