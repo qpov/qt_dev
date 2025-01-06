@@ -1,11 +1,13 @@
 <!-- frontend/index.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Авторизация и Управление Ботом</title>
 </head>
+
 <body>
     <h1>Добро пожаловать!</h1>
     <a href="/api/auth/discord">
@@ -70,7 +72,7 @@
 
         // Функция загрузки списка серверов (гильдий)
         function loadGuilds() {
-            fetch('/api/guilds')
+            fetch('/api/guilds', { credentials: 'include' }) // Добавлено credentials
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Ошибка при загрузке серверов');
@@ -93,13 +95,13 @@
         }
 
         // Обработчик изменения выбора сервера
-        document.getElementById('guild-select').addEventListener('change', function() {
+        document.getElementById('guild-select').addEventListener('change', function () {
             const guildId = this.value;
             const channelSelect = document.getElementById('channel-select');
             channelSelect.innerHTML = '<option value="">--Выберите голосовой канал--</option>';
 
             if (guildId) {
-                fetch(`/api/guilds/${guildId}/channels`)
+                fetch(`/api/guilds/${guildId}/channels`, { credentials: 'include' }) // Добавлено credentials
                     .then(response => {
                         if (!response.ok) {
                             throw new Error('Ошибка при загрузке каналов');
@@ -122,7 +124,7 @@
         });
 
         // Обработчик отправки формы настроек бота
-        document.getElementById('bot-settings-form').addEventListener('submit', function(event) {
+        document.getElementById('bot-settings-form').addEventListener('submit', function (event) {
             event.preventDefault();
 
             const guildId = document.getElementById('guild-select').value;
@@ -156,8 +158,8 @@
         });
 
         // Обработчик кнопки выхода
-        document.getElementById('logout-button').addEventListener('click', function() {
-            fetch('/api/auth/logout')
+        document.getElementById('logout-button').addEventListener('click', function () {
+            fetch('/api/auth/logout', { credentials: 'include' }) // Добавлено credentials
                 .then(() => {
                     hideUserInfo();
                     window.location.reload();
@@ -167,7 +169,7 @@
 
         // Функция загрузки текущих настроек пользователя
         function loadSettings(userId) {
-            fetch('/api/settings')
+            fetch('/api/settings', { credentials: 'include' }) // Добавлено credentials
                 .then(response => {
                     if (response.status === 404) {
                         console.log('Настройки не найдены');
@@ -190,6 +192,8 @@
                 })
                 .catch(console.error);
         }
+
     </script>
 </body>
+
 </html>
