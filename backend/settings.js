@@ -29,6 +29,7 @@ function saveSettings() {
 
 // Получить настройки пользователя по его ID
 function getUserSettings(userId) {
+    console.log('Запрос настроек для пользователя:', userId);
     return settings.users ? settings.users[userId] : null;
 }
 
@@ -38,6 +39,7 @@ function setUserSettings(userId, guildId, voiceChannelId) {
         settings.users = {};
     }
     settings.users[userId] = { guildId, voiceChannelId };
+    console.log('Устанавливаем настройки для пользователя:', userId, guildId, voiceChannelId);
     saveSettings();
 }
 
