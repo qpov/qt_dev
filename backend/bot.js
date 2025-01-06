@@ -1,14 +1,14 @@
 // backend/bot.js
-const { Client, Intents } = require('discord.js');
+const { Client, GatewayIntentBits, ChannelType, PermissionsBitField } = require('discord.js');
 require('dotenv').config();
 
 const settings = require('./settings');
 
 const client = new Client({
     intents: [
-        Intents.FLAGS.GUILDS,
-        Intents.FLAGS.GUILD_VOICE_STATES,
-        Intents.FLAGS.GUILD_MEMBERS,
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMembers,
     ],
 });
 
@@ -29,7 +29,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         const guild = client.guilds.cache.get(guildId);
         if (!guild) return;
 
-        const member = guild.members.cache.get(userId);
+        const member = await guild.members.fetch(userId).catch(() => null);
         if (!member) return;
 
         // Получаем категорию выбранного канала
@@ -37,17 +37,18 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 
         try {
             // Создаём новый голосовой канал с именем пользователя
-            const newChannel = await guild.channels.create(`${member.user.username}'s Channel`, {
-                type: 'GUILD_VOICE',
+            const newChannel = await guild.channels.create({
+                name: `${member.user.username}'s Channel`,
+                type: ChannelType.GuildVoice,
                 parent: category ? category.id : undefined,
                 permissionOverwrites: [
                     {
-                        id: guild.id,
-                        deny: ['VIEW_CHANNEL'],
+                        id: guild.roles.everyone.id,
+                        deny: [PermissionsBitField.Flags.ViewChannel],
                     },
                     {
                         id: member.id,
-                        allow: ['VIEW_CHANNEL', 'CONNECT', 'SPEAK'],
+                        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.Connect, PermissionsBitField.Flags.Speak],
                     },
                 ],
             });
