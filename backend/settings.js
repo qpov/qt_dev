@@ -1,4 +1,3 @@
-// backend/settings.js
 const fs = require('fs');
 const path = require('path');
 
@@ -15,6 +14,8 @@ if (fs.existsSync(settingsFile)) {
     } catch (error) {
         console.error('Ошибка при чтении settings.json:', error);
     }
+} else {
+    console.error('Файл settings.json не найден. Проверьте наличие файла.');
 }
 
 // Функция для сохранения настроек в файл
@@ -27,30 +28,48 @@ function saveSettings() {
     }
 }
 
-// Получить настройки гильдии
-function getGuildSettings(guildId) {
-    return settings.guilds ? settings.guilds[guildId] : null;
+// Получить настройки пользователя по его ID
+function getUserSettings(userId) {
+    console.log('Запрос настроек для пользователя:', userId);
+    const guilds = Object.values(settings.guilds || {});
+    for (const guild of guilds) {
+        if (guild.users && guild.users[userId]) {
+            return guild;
+        }
+    }
+    console.error(`Настройки для пользователя ${userId} не найдены.`);
+    return null;
 }
 
-// Получить все настройки гильдий
-function getAllGuildSettings() {
-    return settings.guilds ? settings.guilds : {};
+// Получить все настройки пользователей
+function getAllUserSettings() {
+    console.log('Получение всех настроек пользователей');
+    return settings.guilds || {};
 }
 
-// Добавить пользователя в настройки гильдии
-function addUserToGuild(guildId, userId) {
+// Установить настройки пользователя
+function setUserSettings(userId, guildId, voiceChannelId) {
+    console.log('Установка настроек:', { userId, guildId, voiceChannelId });
+
     if (!settings.guilds[guildId]) {
         settings.guilds[guildId] = {
             sourceVoiceChannelId: null,
             users: {}
         };
     }
-    settings.guilds[guildId].users[userId] = {};
+    settings.guilds[guildId].users[userId] = { voiceChannelId };
     saveSettings();
+}
+
+// Получить настройки гильдии
+function getGuildSettings(guildId) {
+    console.log('Запрос настроек для гильдии:', guildId);
+    return settings.guilds ? settings.guilds[guildId] : null;
 }
 
 // Установить исходный голосовой канал для гильдии
 function setSourceVoiceChannel(guildId, channelId) {
+    console.log(`Установка исходного голосового канала для гильдии ${guildId}: ${channelId}`);
     if (!settings.guilds[guildId]) {
         settings.guilds[guildId] = {
             sourceVoiceChannelId: channelId,
@@ -62,15 +81,11 @@ function setSourceVoiceChannel(guildId, channelId) {
     saveSettings();
 }
 
-// Получить список пользователей для гильдии
-function getGuildUsers(guildId) {
-    return settings.guilds && settings.guilds[guildId] ? settings.guilds[guildId].users : {};
-}
-
 module.exports = {
+    getUserSettings,
+    getAllUserSettings,
+    setUserSettings,
     getGuildSettings,
-    getAllGuildSettings,
-    addUserToGuild,
     setSourceVoiceChannel,
-    getGuildUsers,
+    saveSettings
 };
