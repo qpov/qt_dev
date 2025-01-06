@@ -220,19 +220,19 @@ app.get('/api/settings', isAuthenticated, (req, res) => {
 // Главная страница
 app.get('/', (req, res) => {
     console.log('Запрос на главную страницу /');
-    res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+    res.sendFile(path.join(__dirname, './frontend', 'index.html'));
 });
 
 // Страница авторизации
 app.get('/login', (req, res) => {
     console.log('Запрос на страницу /login');
-    res.sendFile(path.join(__dirname, '../frontend', 'login.html'));
+    res.sendFile(path.join(__dirname, './frontend', 'login.html'));
 });
 
 // Страница управления ботом
 app.get('/dashboard', isAuthenticated, (req, res) => {
     console.log('Запрос на страницу /dashboard');
-    res.sendFile(path.join(__dirname, '../frontend', 'dashboard.html'));
+    res.sendFile(path.join(__dirname, './frontend', 'dashboard.html'));
 });
 
 // Все остальные маршруты возвращают 404
