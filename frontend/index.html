@@ -1,16 +1,56 @@
+<!-- frontend/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Авторизация</title>
+    <title>Авторизация и Управление Ботом</title>
 </head>
 <body>
     <h1>Добро пожаловать!</h1>
     <a href="/api/auth/discord">
         <button>Войти через Discord</button>
-    </a>    
+    </a>
+
+    <div id="user-info" style="display: none;">
+        <h2>Привет, <span id="username"></span>!</h2>
+        <button id="logout-button">Выйти</button>
+
+        <h3>Настройки Бота</h3>
+        <form id="bot-settings-form">
+            <label for="guild-select">Выберите сервер:</label>
+            <select id="guild-select" required>
+                <option value="">--Выберите сервер--</option>
+            </select>
+
+            <br><br>
+
+            <label for="channel-select">Выберите голосовой канал:</label>
+            <select id="channel-select" required>
+                <option value="">--Выберите голосовой канал--</option>
+            </select>
+
+            <br><br>
+
+            <button type="submit">Сохранить настройки</button>
+        </form>
+
+        <div id="settings-status"></div>
+    </div>
+
     <script>
+        // Функция отображения информации о пользователе
+        function showUserInfo(user) {
+            document.getElementById('user-info').style.display = 'block';
+            document.getElementById('username').textContent = user.username || user.id;
+        }
+
+        // Функция скрытия информации о пользователе
+        function hideUserInfo() {
+            document.getElementById('user-info').style.display = 'none';
+        }
+
+        // Запрос информации о текущем пользователе
         fetch('/api/auth/user')
             .then(response => {
                 if (response.status === 401) {
@@ -21,10 +61,135 @@
             })
             .then(user => {
                 if (user) {
-                    document.body.innerHTML += `<h2>Привет, ${user.username}!</h2>`;
+                    showUserInfo(user);
+                    loadGuilds();
+                    loadSettings(user.id);
                 }
             })
             .catch(console.error);
+
+        // Функция загрузки списка серверов (гильдий)
+        function loadGuilds() {
+            fetch('/api/guilds')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка при загрузке серверов');
+                    }
+                    return response.json();
+                })
+                .then(guilds => {
+                    const guildSelect = document.getElementById('guild-select');
+                    guilds.forEach(guild => {
+                        const option = document.createElement('option');
+                        option.value = guild.id;
+                        option.textContent = guild.name;
+                        guildSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert('Не удалось загрузить серверы');
+                });
+        }
+
+        // Обработчик изменения выбора сервера
+        document.getElementById('guild-select').addEventListener('change', function() {
+            const guildId = this.value;
+            const channelSelect = document.getElementById('channel-select');
+            channelSelect.innerHTML = '<option value="">--Выберите голосовой канал--</option>';
+
+            if (guildId) {
+                fetch(`/api/guilds/${guildId}/channels`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Ошибка при загрузке каналов');
+                        }
+                        return response.json();
+                    })
+                    .then(channels => {
+                        channels.forEach(channel => {
+                            const option = document.createElement('option');
+                            option.value = channel.id;
+                            option.textContent = channel.name;
+                            channelSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        alert('Не удалось загрузить голосовые каналы');
+                    });
+            }
+        });
+
+        // Обработчик отправки формы настроек бота
+        document.getElementById('bot-settings-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const guildId = document.getElementById('guild-select').value;
+            const voiceChannelId = document.getElementById('channel-select').value;
+
+            if (!guildId || !voiceChannelId) {
+                alert('Пожалуйста, выберите сервер и голосовой канал');
+                return;
+            }
+
+            fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ guildId, voiceChannelId }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(text) });
+                    }
+                    return response.text();
+                })
+                .then(message => {
+                    document.getElementById('settings-status').textContent = message;
+                })
+                .catch(error => {
+                    console.error(error);
+                    document.getElementById('settings-status').textContent = `Ошибка: ${error.message}`;
+                });
+        });
+
+        // Обработчик кнопки выхода
+        document.getElementById('logout-button').addEventListener('click', function() {
+            fetch('/api/auth/logout')
+                .then(() => {
+                    hideUserInfo();
+                    window.location.reload();
+                })
+                .catch(console.error);
+        });
+
+        // Функция загрузки текущих настроек пользователя
+        function loadSettings(userId) {
+            fetch('/api/settings')
+                .then(response => {
+                    if (response.status === 404) {
+                        console.log('Настройки не найдены');
+                    } else {
+                        return response.json();
+                    }
+                })
+                .then(settings => {
+                    if (settings) {
+                        // Автоматически выбираем сервер и канал, если настройки уже сохранены
+                        document.getElementById('guild-select').value = settings.guildId;
+                        // Триггерим событие изменения, чтобы загрузить каналы
+                        document.getElementById('guild-select').dispatchEvent(new Event('change'));
+
+                        // После загрузки каналов, выбираем нужный
+                        setTimeout(() => {
+                            document.getElementById('channel-select').value = settings.voiceChannelId;
+                        }, 500);
+                    }
+                })
+                .catch(console.error);
+        }
     </script>
 </body>
 </html>
