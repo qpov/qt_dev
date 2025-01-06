@@ -37,26 +37,21 @@ passport.use(new DiscordStrategy({
 }));
 
 passport.serializeUser((user, done) => {
-    console.log('Сериализация пользователя:', user);
     done(null, user);
 });
-passport.deserializeUser((obj, done) => {
-    console.log('Десериализация пользователя:', obj);
-    done(null, obj);
+
+passport.deserializeUser((user, done) => {
+    done(null, user);
 });
 
 // Routes
-app.get('/api/auth/discord', (req, res, next) => {
-    console.log('Запрос на /api/auth/discord');
-    next();
-}, passport.authenticate('discord'));
+app.get('/api/auth/discord', passport.authenticate('discord'));
 
-app.get('/api/auth/discord/callback', (req, res, next) => {
-    console.log('Запрос на /api/auth/discord/callback');
-    next();
-}, passport.authenticate('discord', { failureRedirect: '/' }),
+app.get('/api/auth/discord/callback',
+    passport.authenticate('discord', {
+        failureRedirect: '/'
+    }),
     (req, res) => {
-        console.log('Успешная авторизация через Discord');
         res.redirect('/dashboard');
     }
 );
@@ -85,17 +80,16 @@ app.get('/api/auth/user', (req, res) => {
 
 // Тестовый маршрут для проверки работы сервера
 app.get('/api/status', (req, res) => {
-    console.log('Маршрут /api/status вызван');
-    res.json({ message: 'API работает корректно!' });
+    res.json({ status: 'ok' });
 });
 
 // Обработка ошибок
 app.use((err, req, res, next) => {
-    console.error('Произошла ошибка:', err.stack);
-    res.status(500).send('Что-то пошло не так!');
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something broke!' });
 });
 
 // Запуск сервера
 app.listen(PORT, () => {
-    console.log(`Сервер запущен на порту ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
