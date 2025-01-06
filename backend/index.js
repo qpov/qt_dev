@@ -63,7 +63,11 @@ passport.deserializeUser((obj, done) => {
 
 // Middleware to check authentication
 function isAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) return next();
+    if (req.isAuthenticated()) {
+        console.log('Пользователь авторизован:', req.user.id);
+        return next();
+    }
+    console.log('Пользователь не авторизован');
     res.status(401).send('Не авторизован');
 }
 
@@ -215,21 +219,25 @@ app.get('/api/settings', isAuthenticated, (req, res) => {
 
 // Главная страница
 app.get('/', (req, res) => {
+    console.log('Запрос на главную страницу /');
     res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
 });
 
 // Страница авторизации
 app.get('/login', (req, res) => {
+    console.log('Запрос на страницу /login');
     res.sendFile(path.join(__dirname, '../frontend', 'login.html'));
 });
 
 // Страница управления ботом
 app.get('/dashboard', isAuthenticated, (req, res) => {
+    console.log('Запрос на страницу /dashboard');
     res.sendFile(path.join(__dirname, '../frontend', 'dashboard.html'));
 });
 
 // Все остальные маршруты возвращают 404
 app.get('*', (req, res) => {
+    console.log(`Запрос на несуществующий маршрут: ${req.originalUrl}`);
     res.status(404).send('Страница не найдена');
 });
 
