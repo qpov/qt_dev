@@ -1,5 +1,5 @@
 // backend/bot.js
-const { Client, GatewayIntentBits, ChannelType, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 require('dotenv').config();
 
 const settings = require('./settings');

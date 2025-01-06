@@ -8,7 +8,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const morgan = require('morgan');
-const { ChannelType } = require('discord.js');
+const { ChannelType } = require('discord.js'); // Импорт ChannelType
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,13 +18,21 @@ const bot = require('./bot');
 const settings = require('./settings');
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: 'http://185.129.49.250', // Укажите ваш фронтенд домен
+    credentials: true, // Разрешить передачу куки
+}));
 app.use(bodyParser.json());
 app.use(morgan('combined'));
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your_default_secret',
     resave: false,
     saveUninitialized: false,
+    cookie: {
+        secure: false, // Установите true, если используете HTTPS
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 1 день
+    },
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -138,10 +146,12 @@ app.get('/api/guilds/:guildId/channels', isAuthenticated, async (req, res) => {
         }
 
         // Получаем голосовые каналы
-        const voiceChannels = guild.channels.cache.filter(c => c.type === ChannelType.GuildVoice).map(c => ({
-            id: c.id,
-            name: c.name,
-        }));
+        const voiceChannels = guild.channels.cache
+            .filter(c => c.type === ChannelType.GuildVoice)
+            .map(c => ({
+                id: c.id,
+                name: c.name,
+            }));
 
         res.json(voiceChannels);
     } catch (error) {
