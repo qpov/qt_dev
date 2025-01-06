@@ -9,6 +9,10 @@ body {
     color: white; /* Белый текст */
 }
 
+header {
+    background-color: #222222;
+}
+
 h1 {
     color: white;
 }
