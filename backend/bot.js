@@ -78,7 +78,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                 // Перемещаем пользователя в существующий канал
                 try {
                     await newState.setChannel(existingChannel);
-                    console.log(`Пользователь ${userTag} перемещён в существующий канал ${existingChannel.name}.`);
+                    console.log(`Пользователь ${userTag} перемещён в канал ${existingChannel.name}.`);
                 } catch (error) {
                     console.error(`Не удалось переместить пользователя ${userTag} в канал ${existingChannel.name}:`, error);
                 }
@@ -101,10 +101,11 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                     {
                         id: guild.roles.everyone.id,
                         allow: ['Connect', 'Speak'],
+                        deny: ['ViewChannel'], // Скрываем канал от всех, кроме конкретного пользователя
                     },
                     {
                         id: userId,
-                        allow: ['Connect', 'Speak'],
+                        allow: ['Connect', 'Speak', 'ViewChannel'],
                     },
                 ],
             });
