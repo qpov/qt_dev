@@ -18,13 +18,25 @@ const PORT = process.env.PORT || 3000;
 const bot = require('./bot'); // Ваш Discord бот
 const settings = require('./settings'); // Ваш модуль настроек
 
-// Middleware
+// Middleware для логирования всех запросов
+app.use((req, res, next) => {
+    console.log(`Incoming request: ${req.method} ${req.url}`);
+    next();
+});
+
+// Middleware для CORS
 app.use(cors({
     origin: 'http://185.129.49.250', // Замените на ваш фронтенд домен
     credentials: true, // Разрешить передачу куки
 }));
+
+// Middleware для парсинга JSON
 app.use(bodyParser.json());
+
+// Middleware для логирования HTTP запросов
 app.use(morgan('combined'));
+
+// Middleware для сессий
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your_default_secret',
     resave: false,
@@ -35,6 +47,8 @@ app.use(session({
         maxAge: 24 * 60 * 60 * 1000, // 1 день
     },
 }));
+
+// Инициализация Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -57,6 +71,7 @@ passport.use(new DiscordStrategy({
 passport.serializeUser((user, done) => {
     done(null, user);
 });
+
 passport.deserializeUser((obj, done) => {
     done(null, obj);
 });
@@ -205,7 +220,7 @@ app.get('/dashboard', isAuthenticated, (req, res) => {
 
 // Все остальные маршруты возвращают 404
 app.get('*', (req, res) => {
-    res.status(404).sendFile(path.resolve(__dirname, '../frontend/404.html')); // Можно изменить на 404
+    res.status(404).sendFile(path.resolve(__dirname, '../frontend/404.html')); // Убедитесь, что 404.html существует
 });
 
 // Обработка ошибок
@@ -215,6 +230,6 @@ app.use((err, req, res, next) => {
 });
 
 // Запуск сервера
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => { // Добавлен '0.0.0.0' для прослушивания на всех интерфейсах
     console.log(`Сервер запущен на порту ${PORT}`);
 });
