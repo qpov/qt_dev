@@ -14,7 +14,7 @@ const client = new Client({
     ],
 });
 
-const createdChannels = new Map(); // Map для отслеживания созданных каналов (userId -> channelId)
+const createdChannels = new Map(); // Map для отслеживания созданных каналов (channelId -> userId)
 
 client.once('ready', () => {
     console.log(`Бот вошёл как ${client.user.tag}`);
@@ -24,16 +24,12 @@ client.once('ready', () => {
 
 // Функция для инициализации каналов при запуске бота
 function initializeChannels() {
-    const usersSettings = settings.getAllUserSettings();
-    if (typeof usersSettings !== 'object' || usersSettings === null) {
-        console.error('getAllUserSettings() вернул некорректное значение:', usersSettings);
-        return;
-    }
-
-    Object.entries(usersSettings).forEach(([userId, userSetting]) => {
+    const allGuildSettings = settings.getAllGuildSettings();
+    for (const guildId in allGuildSettings) {
+        const guildSetting = allGuildSettings[guildId];
         // Здесь мы не подключаемся к голосовым каналам, а просто отслеживаем настройки
         // Создание каналов будет происходить при подключении пользователя
-    });
+    }
 }
 
 // Функция для отслеживания изменений в файле настроек
@@ -50,32 +46,30 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     // Игнорируем изменения статуса бота
     if (newState.member.user.bot) return;
 
+    const guildId = newState.guild.id;
+    const guildSetting = settings.getGuildSettings(guildId);
+    if (!guildSetting || !guildSetting.sourceVoiceChannelId) return; // Нет настроек для этой гильдии
+
+    const sourceChannelId = guildSetting.sourceVoiceChannelId;
+
     // Получаем ID пользователя и его тег
     const userId = newState.id;
     const userTag = newState.member.user.tag;
 
-    // Получаем настройки пользователя
-    const userSetting = settings.getUserSettings(userId);
-    if (!userSetting) return; // Нет настроек для этого пользователя
+    // Проверяем, разрешено ли этому пользователю создавать каналы
+    const guildUsers = settings.getGuildUsers(guildId);
+    if (!guildUsers[userId]) return; // Пользователь не имеет разрешения
 
-    const { guildId, voiceChannelId } = userSetting;
-
-    // Получаем гильдию
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) {
-        console.log(`Гильдия с ID ${guildId} не найдена.`);
-        return;
-    }
-
-    // Проверяем, подключился ли пользователь к мониторимому голосовому каналу
-    if (newState.channelId === voiceChannelId && oldState.channelId !== voiceChannelId) {
+    // Проверяем, подключился ли пользователь к исходному голосовому каналу
+    if (newState.channelId === sourceChannelId && oldState.channelId !== sourceChannelId) {
         // Проверяем, есть ли уже созданный канал для этого пользователя
-        if (createdChannels.has(userId)) {
-            const existingChannelId = createdChannels.get(userId);
-            const existingChannel = guild.channels.cache.get(existingChannelId);
+        const existingChannelId = Array.from(createdChannels.entries())
+            .find(([channelId, uid]) => uid === userId)?.[0];
+
+        if (existingChannelId) {
+            const existingChannel = newState.guild.channels.cache.get(existingChannelId);
             if (existingChannel) {
-                console.log(`У пользователя ${userTag} уже есть канал ${existingChannel.name}.`);
-                // Перемещаем пользователя в существующий канал
+                console.log(`У пользователя ${userTag} уже есть канал ${existingChannel.name}. Перемещаем его туда.`);
                 try {
                     await newState.setChannel(existingChannel);
                     console.log(`Пользователь ${userTag} перемещён в канал ${existingChannel.name}.`);
@@ -85,32 +79,32 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                 return;
             } else {
                 // Канал был удалён вручную, удаляем из карты
-                createdChannels.delete(userId);
+                createdChannels.delete(existingChannelId);
             }
         }
 
         // Создаём новый голосовой канал с именем пользователя
         const channelName = userTag;
         try {
-            const newChannel = await guild.channels.create({
+            const newChannel = await newState.guild.channels.create({
                 name: channelName,
                 type: ChannelType.GuildVoice,
                 reason: `Создан канал для пользователя ${userTag}`,
-                parent: newState.channel.parentId, // Устанавливаем ту же категорию, что и мониторимому каналу
+                parent: newState.channel.parentId, // Устанавливаем ту же категорию, что и исходному каналу
                 permissionOverwrites: [
                     {
-                        id: guild.roles.everyone.id,
+                        id: newState.guild.roles.everyone.id,
                         allow: ['Connect', 'Speak'],
-                        deny: ['ViewChannel'], // Скрываем канал от всех, кроме конкретного пользователя
+                        // Удалили deny: ['ViewChannel'], чтобы не скрывать канал
                     },
                     {
                         id: userId,
-                        allow: ['Connect', 'Speak', 'ViewChannel'],
+                        allow: ['Connect', 'Speak'],
                     },
                 ],
             });
             console.log(`Создан голосовой канал ${newChannel.name} для пользователя ${userTag}.`);
-            createdChannels.set(userId, newChannel.id);
+            createdChannels.set(newChannel.id, userId);
 
             // Перемещаем пользователя в новый канал
             await newState.setChannel(newChannel);
@@ -121,14 +115,14 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     }
 
     // Проверяем, если пользователь покинул созданный канал, и там стало никого
-    if (oldState.channelId && createdChannels.has(userId)) {
+    if (oldState.channelId && createdChannels.has(oldState.channelId)) {
         const leftChannelId = oldState.channelId;
-        const leftChannel = guild.channels.cache.get(leftChannelId);
+        const leftChannel = newState.guild.channels.cache.get(leftChannelId);
         if (leftChannel && leftChannel.members.size === 0) {
             try {
                 await leftChannel.delete(`Удаление пустого канала, созданного для пользователя ${userTag}`);
                 console.log(`Канал ${leftChannel.name} удалён, так как он стал пустым.`);
-                createdChannels.delete(userId);
+                createdChannels.delete(leftChannelId);
             } catch (error) {
                 console.error(`Не удалось удалить канал ${leftChannel.name}:`, error);
             }

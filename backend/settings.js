@@ -27,53 +27,50 @@ function saveSettings() {
     }
 }
 
-// Получить настройки пользователя по его ID
-function getUserSettings(userId) {
-    console.log('Запрос настроек для пользователя:', userId);
-    return settings.users ? settings.users[userId] : null;
+// Получить настройки гильдии
+function getGuildSettings(guildId) {
+    return settings.guilds ? settings.guilds[guildId] : null;
 }
 
-// Получить все настройки пользователей
-function getAllUserSettings() {
-    return settings.users ? settings.users : {};
+// Получить все настройки гильдий
+function getAllGuildSettings() {
+    return settings.guilds ? settings.guilds : {};
 }
 
-// Установить настройки пользователя
-function setUserSettings(userId, guildId, voiceChannelId) {
-    if (!settings.users) {
-        settings.users = {};
+// Добавить пользователя в настройки гильдии
+function addUserToGuild(guildId, userId) {
+    if (!settings.guilds[guildId]) {
+        settings.guilds[guildId] = {
+            sourceVoiceChannelId: null,
+            users: {}
+        };
     }
-    settings.users[userId] = { guildId, voiceChannelId };
-    console.log('Устанавливаем настройки для пользователя:', userId, guildId, voiceChannelId);
+    settings.guilds[guildId].users[userId] = {};
     saveSettings();
 }
 
-// Проверка, управляется ли канал ботом
-function isManagedChannel(channelId) {
-    return settings.managedChannels && settings.managedChannels.includes(channelId);
-}
-
-// Добавить канал в список управляемых
-function addManagedChannel(channelId) {
-    if (!settings.managedChannels) {
-        settings.managedChannels = [];
+// Установить исходный голосовой канал для гильдии
+function setSourceVoiceChannel(guildId, channelId) {
+    if (!settings.guilds[guildId]) {
+        settings.guilds[guildId] = {
+            sourceVoiceChannelId: channelId,
+            users: {}
+        };
+    } else {
+        settings.guilds[guildId].sourceVoiceChannelId = channelId;
     }
-    settings.managedChannels.push(channelId);
     saveSettings();
 }
 
-// Удалить канал из списка управляемых
-function removeManagedChannel(channelId) {
-    if (!settings.managedChannels) return;
-    settings.managedChannels = settings.managedChannels.filter(id => id !== channelId);
-    saveSettings();
+// Получить список пользователей для гильдии
+function getGuildUsers(guildId) {
+    return settings.guilds && settings.guilds[guildId] ? settings.guilds[guildId].users : {};
 }
 
 module.exports = {
-    getUserSettings,
-    getAllUserSettings,
-    setUserSettings,
-    isManagedChannel,
-    addManagedChannel,
-    removeManagedChannel,
+    getGuildSettings,
+    getAllGuildSettings,
+    addUserToGuild,
+    setSourceVoiceChannel,
+    getGuildUsers,
 };
