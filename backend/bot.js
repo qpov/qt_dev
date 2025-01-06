@@ -1,6 +1,5 @@
 // backend/bot.js
 const { Client, GatewayIntentBits, ChannelType } = require('discord.js');
-const { joinVoiceChannel, getVoiceConnection, entersState, VoiceConnectionStatus } = require('@discordjs/voice');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -15,17 +14,16 @@ const client = new Client({
     ],
 });
 
-const connections = new Map(); // Map для хранения голосовых подключений по guildId
 const createdChannels = new Map(); // Map для отслеживания созданных каналов (userId -> channelId)
 
 client.once('ready', () => {
     console.log(`Бот вошёл как ${client.user.tag}`);
-    initializeConnections();
+    initializeChannels();
     watchSettingsFile();
 });
 
-// Функция для инициализации подключений на основе текущих настроек
-function initializeConnections() {
+// Функция для инициализации каналов при запуске бота
+function initializeChannels() {
     const usersSettings = settings.getAllUserSettings();
     if (typeof usersSettings !== 'object' || usersSettings === null) {
         console.error('getAllUserSettings() вернул некорректное значение:', usersSettings);
@@ -33,61 +31,8 @@ function initializeConnections() {
     }
 
     Object.entries(usersSettings).forEach(([userId, userSetting]) => {
-        const { guildId, voiceChannelId } = userSetting;
-        connectToVoiceChannel(guildId, voiceChannelId);
-    });
-}
-
-// Функция для подключения к голосовому каналу
-function connectToVoiceChannel(guildId, voiceChannelId) {
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) {
-        console.log(`Гильдия с ID ${guildId} не найдена.`);
-        return;
-    }
-
-    const voiceChannel = guild.channels.cache.get(voiceChannelId);
-    if (!voiceChannel || voiceChannel.type !== ChannelType.GuildVoice) {
-        console.log(`Голосовой канал с ID ${voiceChannelId} не найден или не является голосовым.`);
-        return;
-    }
-
-    // Проверяем, есть ли уже подключение к этому каналу
-    if (connections.has(guildId)) {
-        console.log(`Бот уже подключён к голосовому каналу в гильдии ${guildId}.`);
-        return;
-    }
-
-    const connection = joinVoiceChannel({
-        channelId: voiceChannel.id,
-        guildId: guild.id,
-        adapterCreator: guild.voiceAdapterCreator,
-    });
-
-    // Отслеживаем состояние подключения
-    entersState(connection, VoiceConnectionStatus.Ready, 30_000)
-        .then(() => {
-            console.log(`Бот успешно подключился к голосовому каналу ${voiceChannel.name} в гильдии ${guild.name}.`);
-            connections.set(guildId, connection);
-        })
-        .catch(error => {
-            console.error(`Не удалось подключиться к голосовому каналу ${voiceChannel.name} в гильдии ${guild.name}:`, error);
-            connection.destroy();
-        });
-
-    // Обработка разрыва подключения
-    connection.on(VoiceConnectionStatus.Disconnected, async (oldState, newState) => {
-        try {
-            await Promise.race([
-                entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
-                entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
-            ]);
-            // Пере подключение произошло успешно
-        } catch (error) {
-            console.log(`Разрыв подключения к гильдии ${guild.name}. Удаляем подключение из карты.`);
-            connections.delete(guildId);
-            connection.destroy();
-        }
+        // Здесь мы не подключаемся к голосовым каналам, а просто отслеживаем настройки
+        // Создание каналов будет происходить при подключении пользователя
     });
 }
 
@@ -95,56 +40,9 @@ function connectToVoiceChannel(guildId, voiceChannelId) {
 function watchSettingsFile() {
     const settingsFilePath = path.join(__dirname, 'settings.json');
     fs.watchFile(settingsFilePath, (curr, prev) => {
-        console.log('Файл settings.json был изменён. Обновляем подключения...');
-        updateConnections();
+        console.log('Файл settings.json был изменён. Обновляем настройки...');
+        // При изменении настроек мы можем обновить логику, если необходимо
     });
-}
-
-// Функция для обновления подключений на основе изменений в настройках
-function updateConnections() {
-    const usersSettings = settings.getAllUserSettings();
-    if (typeof usersSettings !== 'object' || usersSettings === null) {
-        console.error('getAllUserSettings() вернул некорректное значение:', usersSettings);
-        return;
-    }
-
-    const connectedGuilds = Array.from(connections.keys());
-
-    // Подключаемся к новым голосовым каналам
-    Object.entries(usersSettings).forEach(([userId, userSetting]) => {
-        const { guildId, voiceChannelId } = userSetting;
-        if (!connections.has(guildId)) {
-            connectToVoiceChannel(guildId, voiceChannelId);
-        } else {
-            // Проверяем, изменился ли голосовой канал
-            const connection = connections.get(guildId);
-            const currentChannelId = connection.joinConfig.channelId;
-            if (currentChannelId !== voiceChannelId) {
-                console.log(`Голосовой канал для гильдии ${guildId} изменился. Переподключаемся...`);
-                disconnectFromVoiceChannel(guildId);
-                connectToVoiceChannel(guildId, voiceChannelId);
-            }
-        }
-    });
-
-    // Отключаемся от гильдий, которые больше не управляются
-    connectedGuilds.forEach(guildId => {
-        const isManaged = Object.values(usersSettings).some(userSetting => userSetting.guildId === guildId);
-        if (!isManaged) {
-            console.log(`Гильдия ${guildId} больше не управляется. Отключаемся...`);
-            disconnectFromVoiceChannel(guildId);
-        }
-    });
-}
-
-// Функция для отключения от голосового канала
-function disconnectFromVoiceChannel(guildId) {
-    const connection = connections.get(guildId);
-    if (connection) {
-        connection.destroy();
-        connections.delete(guildId);
-        console.log(`Бот отключился от гильдии ${guildId}.`);
-    }
 }
 
 // Обработчик событий голосовых состояний
@@ -170,7 +68,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     }
 
     // Проверяем, подключился ли пользователь к мониторимому голосовому каналу
-    if (newState.channelId === voiceChannelId) {
+    if (newState.channelId === voiceChannelId && oldState.channelId !== voiceChannelId) {
         // Проверяем, есть ли уже созданный канал для этого пользователя
         if (createdChannels.has(userId)) {
             const existingChannelId = createdChannels.get(userId);
@@ -204,6 +102,10 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                         id: guild.roles.everyone.id,
                         allow: ['Connect', 'Speak'],
                     },
+                    {
+                        id: userId,
+                        allow: ['Connect', 'Speak'],
+                    },
                 ],
             });
             console.log(`Создан голосовой канал ${newChannel.name} для пользователя ${userTag}.`);
@@ -217,7 +119,7 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         }
     }
 
-    // Проверяем, если пользователь покинул созданный канал, и он стал пустым
+    // Проверяем, если пользователь покинул созданный канал, и там стало никого
     if (oldState.channelId && createdChannels.has(userId)) {
         const leftChannelId = oldState.channelId;
         const leftChannel = guild.channels.cache.get(leftChannelId);
@@ -232,16 +134,6 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
         }
     }
 });
-
-// Функция для отключения от голосового канала
-function disconnectFromVoiceChannel(guildId) {
-    const connection = connections.get(guildId);
-    if (connection) {
-        connection.destroy();
-        connections.delete(guildId);
-        console.log(`Бот отключился от гильдии ${guildId}.`);
-    }
-}
 
 // Запуск бота
 client.login(process.env.DISCORD_BOT_TOKEN).catch(error => {
