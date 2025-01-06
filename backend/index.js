@@ -28,6 +28,12 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Middleware для отключения кэширования для всех API маршрутов
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    next();
+});
+
 // Passport Discord Strategy
 passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
@@ -92,16 +98,27 @@ app.get('/api/auth/user', (req, res) => {
     res.json(req.user);
 });
 
-// Получение списка гильдий пользователя
+// Получение списка гильдий пользователя с проверкой наличия пользователя в каждой гильдии
 app.get('/api/guilds', isAuthenticated, async (req, res) => {
     try {
         const userId = req.user.id;
+        const guilds = [];
 
-        const guilds = bot.guilds.cache.filter(guild => guild.members.cache.has(userId)).map(guild => ({
-            id: guild.id,
-            name: guild.name,
-        }));
+        // Перебираем все гильдии, к которым подключён бот
+        for (const guild of bot.guilds.cache.values()) {
+            try {
+                // Пытаемся получить информацию о пользователе в гильдии
+                const member = await guild.members.fetch(userId);
+                if (member) {
+                    guilds.push({ id: guild.id, name: guild.name });
+                }
+            } catch (error) {
+                // Если пользователь не является участником гильдии или произошла ошибка
+                // Просто пропускаем эту гильдию
+            }
+        }
 
+        console.log(`Получено ${guilds.length} гильдий для пользователя: ${userId}`);
         res.json(guilds);
     } catch (error) {
         console.error('Ошибка при получении гильдий:', error);
