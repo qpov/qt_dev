@@ -3,9 +3,9 @@ const path = require('path');
 
 const settingsFile = path.join(__dirname, 'settings.json');
 
-let settings = {};
+let settings = { guilds: {} }; // Инициализация с базовой структурой
 
-// Загрузка настроек из файла, если он существует
+// Загрузка настроек из файла
 if (fs.existsSync(settingsFile)) {
     try {
         const data = fs.readFileSync(settingsFile, 'utf-8');
@@ -15,7 +15,8 @@ if (fs.existsSync(settingsFile)) {
         console.error('Ошибка при чтении settings.json:', error);
     }
 } else {
-    console.error('Файл settings.json не найден. Проверьте наличие файла.');
+    console.error('Файл settings.json не найден. Создаём новый с базовой структурой.');
+    saveSettings();
 }
 
 // Функция для сохранения настроек в файл
@@ -34,7 +35,7 @@ function getUserSettings(userId) {
     const guilds = Object.values(settings.guilds || {});
     for (const guild of guilds) {
         if (guild.users && guild.users[userId]) {
-            return guild;
+            return { guildId: guild.guildId, voiceChannelId: guild.users[userId].voiceChannelId };
         }
     }
     console.error(`Настройки для пользователя ${userId} не найдены.`);
@@ -64,7 +65,7 @@ function setUserSettings(userId, guildId, voiceChannelId) {
 // Получить настройки гильдии
 function getGuildSettings(guildId) {
     console.log('Запрос настроек для гильдии:', guildId);
-    return settings.guilds ? settings.guilds[guildId] : null;
+    return settings.guilds[guildId] || { sourceVoiceChannelId: null, users: {} };
 }
 
 // Установить исходный голосовой канал для гильдии
