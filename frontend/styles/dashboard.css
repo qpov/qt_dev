@@ -1,12 +1,15 @@
 /* frontend/styles/dashboard.css */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Roboto', Arial, sans-serif;
     margin: 20px;
-    background-color: #ffffff;
+    background-color: #000000; /* Чёрный фон */
+    color: white; /* Белый текст */
 }
 
 h1 {
-    color: #333;
+    color: white;
     text-align: center;
 }
 
@@ -19,7 +22,7 @@ h1 {
 
 #user-info h2 {
     margin: 0;
-    color: #555;
+    color: white;
 }
 
 #logout-button {
@@ -48,6 +51,7 @@ label {
     width: 200px;
     font-weight: bold;
     text-align: right;
+    color: white; /* Белый текст */
 }
 
 select {
