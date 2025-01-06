@@ -5,38 +5,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление Ботом</title>
+    <title>qt</title>
     <link rel="stylesheet" href="/styles/dashboard.css">
     <link rel="icon" href="/assets/favicon.ico" type="image/x-icon">
 </head>
 
 <body>
-    <h1>Панель Управления Ботом</h1>
+    <header>
+        <h1>Ваш надежный помощник для управления голосовыми каналами в Discord</h1>
+    </header>
+
     <div id="user-info">
-        <h2>Привет, <span id="username"></span>!</h2>
-        <button id="logout-button">Выйти</button>
+        <div>
+            <h2>Привет, <span id="username"></span>!</h2>
+        </div>
+        <div>
+            <button id="logout-button">Выйти</button>
+        </div>
     </div>
 
-    <h3>Настройки Бота</h3>
-    <form id="bot-settings-form">
-        <label for="guild-select">Выберите сервер:</label>
-        <select id="guild-select" required>
-            <option value="">--Выберите сервер--</option>
-        </select>
+    <div>
+        <form id="bot-settings-form">
+            <h3 class="bot-settings">Настройки Бота</h3>
+            <hr>
+            <p for="guild-select">Выберите сервер:</p>
+            <select id="guild-select" required>
+                <option value="">Сервер</option>
+            </select>
 
-        <br><br>
+            <p for="channel-select">Выберите голосовой канал:</p>
+            <select id="channel-select" required>
+                <option value="">Голосовой канал</option>
+            </select>
+            <br>
+            <button type="submit">Сохранить настройки</button>
+        </form>
 
-        <label for="channel-select">Выберите голосовой канал:</label>
-        <select id="channel-select" required>
-            <option value="">--Выберите голосовой канал--</option>
-        </select>
+        <div id="settings-status"></div>
+    </div>
 
-        <br><br>
-
-        <button type="submit">Сохранить настройки</button>
-    </form>
-
-    <div id="settings-status"></div>
+    <footer>
+        <p>https://discord.com/application-directory/1298710630995595297</p>
+    </footer>
 
     <script src="/scripts/dashboard.js"></script>
 </body>

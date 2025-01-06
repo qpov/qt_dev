@@ -1,31 +1,54 @@
 /* frontend/styles/login.css */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
+* {
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Roboto', Arial, sans-serif;
-    margin: 20px;
     background-color: #000000; /* Чёрный фон */
-    text-align: center;
     color: white; /* Белый текст */
+    text-align: center;
+}
+
+header {
+    background-color: #111111;
+    text-align: center;
+    padding: 1.5rem;
+}
+
+footer {
+    padding: 1rem;
+    text-align: center;
+    background-color: #111111;
 }
 
 h1 {
-    color: white;
-    margin-bottom: 20px;
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+div {
+    margin: 1rem;
 }
 
 .button-link {
+    margin-top: 1rem;
     display: inline-block;
-    padding: 10px 30px;
-    font-size: 18px;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
     cursor: pointer;
     background-color: #7289da;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 0.5rem;
     text-decoration: none;
+    transition: 0.3s;
 }
 
 .button-link:hover {
     background-color: #5b6eae;
+    transition: 0.3s;
 }
