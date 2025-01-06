@@ -3,9 +3,9 @@ const path = require('path');
 
 const settingsFile = path.join(__dirname, 'settings.json');
 
-let settings = { guilds: {} }; // Инициализация с базовой структурой
+let settings = {};
 
-// Загрузка настроек из файла
+// Загрузка настроек из файла, если он существует
 if (fs.existsSync(settingsFile)) {
     try {
         const data = fs.readFileSync(settingsFile, 'utf-8');
@@ -15,8 +15,7 @@ if (fs.existsSync(settingsFile)) {
         console.error('Ошибка при чтении settings.json:', error);
     }
 } else {
-    console.error('Файл settings.json не найден. Создаём новый с базовой структурой.');
-    saveSettings();
+    console.error('Файл settings.json не найден. Проверьте наличие файла.');
 }
 
 // Функция для сохранения настроек в файл
@@ -32,12 +31,10 @@ function saveSettings() {
 // Получить настройки пользователя по его ID
 function getUserSettings(userId) {
     console.log('Запрос настроек для пользователя:', userId);
-    for (const [guildId, guild] of Object.entries(settings.guilds || {})) {
+    const guilds = Object.values(settings.guilds || {});
+    for (const guild of guilds) {
         if (guild.users && guild.users[userId]) {
-            return {
-                guildId: guildId,
-                voiceChannelId: guild.users[userId].voiceChannelId,
-            };
+            return guild;
         }
     }
     console.error(`Настройки для пользователя ${userId} не найдены.`);
@@ -47,6 +44,12 @@ function getUserSettings(userId) {
 // Получить все настройки пользователей
 function getAllUserSettings() {
     console.log('Получение всех настроек пользователей');
+    return settings.guilds || {};
+}
+
+// Получить все настройки гильдий
+function getAllGuildSettings() {
+    console.log('Получение всех настроек гильдий');
     return settings.guilds || {};
 }
 
@@ -67,7 +70,7 @@ function setUserSettings(userId, guildId, voiceChannelId) {
 // Получить настройки гильдии
 function getGuildSettings(guildId) {
     console.log('Запрос настроек для гильдии:', guildId);
-    return settings.guilds[guildId] || { sourceVoiceChannelId: null, users: {} };
+    return settings.guilds ? settings.guilds[guildId] : null;
 }
 
 // Установить исходный голосовой канал для гильдии
@@ -87,6 +90,7 @@ function setSourceVoiceChannel(guildId, channelId) {
 module.exports = {
     getUserSettings,
     getAllUserSettings,
+    getAllGuildSettings, // Добавлен экспорт метода
     setUserSettings,
     getGuildSettings,
     setSourceVoiceChannel,
