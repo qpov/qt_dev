@@ -189,23 +189,23 @@ app.get('/api/settings', isAuthenticated, (req, res) => {
 
 // Главная страница
 app.get('/', (req, res) => {
-    res.sendFile(path.resolve(__dirname, './frontend/index.html'));
+    res.sendFile(path.resolve(__dirname, '../frontend/index.html'));
 });
 
 // Страница авторизации
 app.get('/login', (req, res) => {
-    res.sendFile(path.resolve(__dirname, './frontend/login.html'));
+    res.sendFile(path.resolve(__dirname, '../frontend/login.html'));
 });
 
 // Страница управления ботом
 app.get('/dashboard', isAuthenticated, (req, res) => {
     console.log('Обрабатывается маршрут /dashboard для пользователя:', req.user.id);
-    res.sendFile(path.resolve(__dirname, './frontend/dashboard.html'));
+    res.sendFile(path.resolve(__dirname, '../frontend/dashboard.html'));
 });
 
 // Все остальные маршруты возвращают 404
 app.get('*', (req, res) => {
-    res.status(404).sendFile(path.resolve(__dirname, '../frontend/index.html')); // Можно изменить на 404
+    res.status(404).sendFile(path.resolve(__dirname, '../frontend/404.html')); // Можно изменить на 404
 });
 
 // Обработка ошибок
