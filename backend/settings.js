@@ -33,6 +33,11 @@ function getUserSettings(userId) {
     return settings.users ? settings.users[userId] : null;
 }
 
+// Получить все настройки пользователей
+function getAllUserSettings() {
+    return settings.users ? settings.users : {};
+}
+
 // Установить настройки пользователя
 function setUserSettings(userId, guildId, voiceChannelId) {
     if (!settings.users) {
@@ -66,6 +71,7 @@ function removeManagedChannel(channelId) {
 
 module.exports = {
     getUserSettings,
+    getAllUserSettings,
     setUserSettings,
     isManagedChannel,
     addManagedChannel,

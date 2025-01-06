@@ -8,7 +8,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const morgan = require('morgan');
-const { ChannelType } = require('discord.js'); // Импорт ChannelType
+const { ChannelType } = require('discord.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,7 +19,7 @@ const settings = require('./settings');
 
 // Middleware
 app.use(cors({
-    origin: 'http://185.129.49.250', // Укажите ваш фронтенд домен
+    origin: 'http://185.129.49.250', // Замените на ваш фронтенд домен
     credentials: true, // Разрешить передачу куки
 }));
 app.use(bodyParser.json());
