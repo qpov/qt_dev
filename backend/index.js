@@ -15,8 +15,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Подключаем бота и настройки
-const bot = require('./bot');
-const settings = require('./settings');
+const bot = require('./bot'); // Ваш Discord бот
+const settings = require('./settings'); // Ваш модуль настроек
 
 // Middleware
 app.use(cors({
@@ -61,76 +61,56 @@ passport.deserializeUser((obj, done) => {
     done(null, obj);
 });
 
-// Middleware to check authentication
+// Middleware для проверки аутентификации
 function isAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-        console.log('Пользователь авторизован:', req.user.id);
-        return next();
-    }
-    console.log('Пользователь не авторизован');
+    if (req.isAuthenticated()) return next();
     res.status(401).send('Не авторизован');
 }
 
 // Маршруты аутентификации
+app.get('/api/auth/discord', passport.authenticate('discord'));
 
-app.get('/api/auth/discord', (req, res, next) => {
-    console.log('Запрос на /api/auth/discord');
-    next();
-}, passport.authenticate('discord'));
-
-app.get('/api/auth/discord/callback', (req, res, next) => {
-    console.log('Запрос на /api/auth/discord/callback');
-    next();
-}, passport.authenticate('discord', { failureRedirect: '/' }),
+app.get('/api/auth/discord/callback', passport.authenticate('discord', { failureRedirect: '/' }),
     (req, res) => {
         console.log('Успешная авторизация через Discord');
-        res.redirect('/dashboard'); // Перенаправление на /dashboard
+        res.redirect('/dashboard');
     }
 );
 
 app.get('/api/auth/logout', (req, res) => {
-    console.log('Маршрут /api/auth/logout вызван');
     req.logout((err) => {
         if (err) {
             console.error('Ошибка при выходе:', err);
             return res.status(500).send('Ошибка выхода');
         }
-        console.log('Пользователь успешно вышел');
         res.redirect('/');
     });
 });
 
 app.get('/api/auth/user', (req, res) => {
-    console.log('Запрос на /api/auth/user');
     if (!req.isAuthenticated()) {
-        console.log('Пользователь не авторизован');
         return res.status(401).send('Не авторизован');
     }
-    console.log('Пользователь авторизован:', req.user);
     res.json(req.user);
 });
 
-// Получение списка гильдий пользователя с проверкой наличия пользователя в каждой гильдии
+// API для гильдий и каналов
 app.get('/api/guilds', isAuthenticated, async (req, res) => {
     try {
         const userId = req.user.id;
         const guilds = [];
 
-        // Перебираем все гильдии, к которым подключён бот
         for (const guild of bot.guilds.cache.values()) {
             try {
-                // Пытаемся получить информацию о пользователе в гильдии
                 const member = await guild.members.fetch(userId);
                 if (member) {
                     guilds.push({ id: guild.id, name: guild.name });
                 }
             } catch (error) {
-                // Если пользователь не является участником гильдии или произошла ошибка
-                // Просто пропускаем эту гильдию
+                // Игнорируем гильдии, где пользователь не состоит
             }
         }
 
-        console.log(`Получено ${guilds.length} гильдий для пользователя: ${userId}`);
         res.json(guilds);
     } catch (error) {
         console.error('Ошибка при получении гильдий:', error);
@@ -138,7 +118,6 @@ app.get('/api/guilds', isAuthenticated, async (req, res) => {
     }
 });
 
-// Получение голосовых каналов в гильдии
 app.get('/api/guilds/:guildId/channels', isAuthenticated, async (req, res) => {
     try {
         const { guildId } = req.params;
@@ -148,7 +127,6 @@ app.get('/api/guilds/:guildId/channels', isAuthenticated, async (req, res) => {
             return res.status(404).send('Сервер не найден или бот не является его участником');
         }
 
-        // Получаем голосовые каналы
         const voiceChannels = guild.channels.cache
             .filter(c => c.type === ChannelType.GuildVoice)
             .map(c => ({
@@ -163,26 +141,22 @@ app.get('/api/guilds/:guildId/channels', isAuthenticated, async (req, res) => {
     }
 });
 
-// Сохранение настроек пользователя
+// API для настроек пользователя
 app.post('/api/settings', isAuthenticated, async (req, res) => {
-    console.log('POST /api/settings вызван');
     try {
         const { guildId, voiceChannelId } = req.body;
 
         if (!guildId || !voiceChannelId) {
-            console.log('Недостаточно данных для сохранения настроек');
             return res.status(400).send('guildId и voiceChannelId обязательны');
         }
 
         const guild = bot.guilds.cache.get(guildId);
         if (!guild) {
-            console.log('Бот не является участником этого сервера:', guildId);
             return res.status(404).send('Бот не является участником этого сервера');
         }
 
         const channel = guild.channels.cache.get(voiceChannelId);
         if (!channel || channel.type !== ChannelType.GuildVoice) {
-            console.log('Выбранный канал не является голосовым:', voiceChannelId);
             return res.status(400).send('Выбранный канал не является голосовым');
         }
 
@@ -197,17 +171,13 @@ app.post('/api/settings', isAuthenticated, async (req, res) => {
     }
 });
 
-// Получение текущих настроек пользователя
 app.get('/api/settings', isAuthenticated, (req, res) => {
     try {
         const userId = req.user.id;
-        console.log('GET /api/settings вызван для пользователя:', userId);
         const userSettings = settings.getUserSettings(userId);
         if (!userSettings) {
-            console.log('Настройки не найдены для пользователя:', userId);
             return res.status(404).send('Настройки не найдены');
         }
-        console.log('Настройки найдены для пользователя:', userId, userSettings);
         res.json(userSettings);
     } catch (error) {
         console.error('Ошибка при получении настроек:', error);
@@ -219,26 +189,23 @@ app.get('/api/settings', isAuthenticated, (req, res) => {
 
 // Главная страница
 app.get('/', (req, res) => {
-    console.log('Запрос на главную страницу /');
-    res.sendFile(path.join(__dirname, './frontend', 'index.html'));
+    res.sendFile(path.resolve(__dirname, '../frontend/index.html'));
 });
 
 // Страница авторизации
 app.get('/login', (req, res) => {
-    console.log('Запрос на страницу /login');
-    res.sendFile(path.join(__dirname, './frontend', 'login.html'));
+    res.sendFile(path.resolve(__dirname, '../frontend/login.html'));
 });
 
 // Страница управления ботом
 app.get('/dashboard', isAuthenticated, (req, res) => {
-    console.log('Запрос на страницу /dashboard');
-    res.sendFile(path.join(__dirname, './frontend', 'dashboard.html'));
+    console.log('Обрабатывается маршрут /dashboard для пользователя:', req.user.id);
+    res.sendFile(path.resolve(__dirname, '../frontend/dashboard.html'));
 });
 
 // Все остальные маршруты возвращают 404
 app.get('*', (req, res) => {
-    console.log(`Запрос на несуществующий маршрут: ${req.originalUrl}`);
-    res.status(404).send('Страница не найдена');
+    res.status(404).sendFile(path.resolve(__dirname, '../frontend/index.html')); // Можно изменить на 404
 });
 
 // Обработка ошибок
