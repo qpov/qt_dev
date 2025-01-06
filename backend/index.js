@@ -175,9 +175,9 @@ app.post('/api/settings', isAuthenticated, async (req, res) => {
             return res.status(400).send('Выбранный канал не является голосовым');
         }
 
-        // Сохранение настроек
-        settings.setUserSettings(req.user.id, guildId, voiceChannelId);
-        console.log('Настройки успешно сохранены для пользователя:', req.user.id);
+        // Обновляем настройки
+        settings.setSourceVoiceChannel(guildId, voiceChannelId);
+        console.log(`Исходный голосовой канал для гильдии ${guildId} обновлён: ${voiceChannelId}`);
 
         res.send('Настройки сохранены');
     } catch (error) {
