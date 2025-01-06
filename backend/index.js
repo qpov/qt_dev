@@ -1,4 +1,5 @@
 // backend/index.js
+
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
@@ -36,6 +37,10 @@ app.use(session({
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Обслуживание статических файлов
+app.use('/styles', express.static(path.join(__dirname, '../frontend', 'styles')));
+app.use('/scripts', express.static(path.join(__dirname, '../frontend', 'scripts')));
 
 // Passport Discord Strategy
 passport.use(new DiscordStrategy({
@@ -75,7 +80,7 @@ app.get('/api/auth/discord/callback', (req, res, next) => {
 }, passport.authenticate('discord', { failureRedirect: '/' }),
     (req, res) => {
         console.log('Успешная авторизация через Discord');
-        res.redirect('/dashboard');
+        res.redirect('/dashboard'); // Перенаправление на /dashboard
     }
 );
 
