@@ -170,10 +170,13 @@ app.post('/api/settings', isAuthenticated, async (req, res) => {
 app.get('/api/settings', isAuthenticated, (req, res) => {
     try {
         const userId = req.user.id;
+        console.log('GET /api/settings вызван для пользователя:', userId);
         const userSettings = settings.getUserSettings(userId);
         if (!userSettings) {
+            console.log('Настройки не найдены для пользователя:', userId);
             return res.status(404).send('Настройки не найдены');
         }
+        console.log('Настройки найдены для пользователя:', userId, userSettings);
         res.json(userSettings);
     } catch (error) {
         console.error('Ошибка при получении настроек:', error);
