@@ -1,4 +1,4 @@
-// frontend/scripts/main.js
+// frontend/scripts/index.js
 
 // Optional: Any scripts for the main page
 
