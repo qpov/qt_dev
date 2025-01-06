@@ -31,10 +31,13 @@ function saveSettings() {
 // Получить настройки пользователя по его ID
 function getUserSettings(userId) {
     console.log('Запрос настроек для пользователя:', userId);
-    const guilds = Object.values(settings.guilds || {});
-    for (const guild of guilds) {
+    for (const guildId in settings.guilds) {
+        const guild = settings.guilds[guildId];
         if (guild.users && guild.users[userId]) {
-            return guild;
+            return {
+                guildId: guildId,
+                ...guild.users[userId],
+            };
         }
     }
     console.error(`Настройки для пользователя ${userId} не найдены.`);

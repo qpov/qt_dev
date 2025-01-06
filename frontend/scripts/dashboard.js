@@ -168,8 +168,7 @@ async function loadSettings(userId) {
             guildSelect.dispatchEvent(changeEvent);
 
             // Ждём загрузки каналов, затем устанавливаем выбранный голосовой канал
-            // Используем MutationObserver для отслеживания добавления опций в channel-select
-            const observer = new MutationObserver((mutationsList, observer) => {
+            const observer = new MutationObserver(() => {
                 if (channelSelect.querySelector(`option[value="${settings.voiceChannelId}"]`)) {
                     channelSelect.value = settings.voiceChannelId;
                     console.log('Установлен выбранный голосовой канал:', settings.voiceChannelId);
