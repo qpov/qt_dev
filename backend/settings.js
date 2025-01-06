@@ -11,6 +11,7 @@ if (fs.existsSync(settingsFile)) {
     try {
         const data = fs.readFileSync(settingsFile, 'utf-8');
         settings = JSON.parse(data);
+        console.log('Настройки загружены из settings.json');
     } catch (error) {
         console.error('Ошибка при чтении settings.json:', error);
     }
