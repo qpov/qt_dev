@@ -8,13 +8,22 @@ let settings = {};
 
 // Загрузка настроек из файла, если он существует
 if (fs.existsSync(settingsFile)) {
-    const data = fs.readFileSync(settingsFile, 'utf-8');
-    settings = JSON.parse(data);
+    try {
+        const data = fs.readFileSync(settingsFile, 'utf-8');
+        settings = JSON.parse(data);
+    } catch (error) {
+        console.error('Ошибка при чтении settings.json:', error);
+    }
 }
 
 // Функция для сохранения настроек в файл
 function saveSettings() {
-    fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+    try {
+        fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
+        console.log('Настройки успешно сохранены в settings.json');
+    } catch (error) {
+        console.error('Ошибка при записи settings.json:', error);
+    }
 }
 
 // Получить настройки пользователя по его ID

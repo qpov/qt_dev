@@ -134,25 +134,30 @@ app.get('/api/guilds/:guildId/channels', isAuthenticated, async (req, res) => {
 
 // Сохранение настроек пользователя
 app.post('/api/settings', isAuthenticated, async (req, res) => {
+    console.log('POST /api/settings вызван');
     try {
         const { guildId, voiceChannelId } = req.body;
 
         if (!guildId || !voiceChannelId) {
+            console.log('Недостаточно данных для сохранения настроек');
             return res.status(400).send('guildId и voiceChannelId обязательны');
         }
 
         const guild = bot.guilds.cache.get(guildId);
         if (!guild) {
+            console.log('Бот не является участником этого сервера:', guildId);
             return res.status(404).send('Бот не является участником этого сервера');
         }
 
         const channel = guild.channels.cache.get(voiceChannelId);
         if (!channel || channel.type !== ChannelType.GuildVoice) {
+            console.log('Выбранный канал не является голосовым:', voiceChannelId);
             return res.status(400).send('Выбранный канал не является голосовым');
         }
 
         // Сохранение настроек
         settings.setUserSettings(req.user.id, guildId, voiceChannelId);
+        console.log('Настройки успешно сохранены для пользователя:', req.user.id);
 
         res.send('Настройки сохранены');
     } catch (error) {
