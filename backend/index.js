@@ -37,12 +37,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Middleware для отключения кэширования для всех API маршрутов
-app.use('/api', (req, res, next) => {
-    res.set('Cache-Control', 'no-store');
-    next();
-});
-
 // Passport Discord Strategy
 passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
@@ -212,12 +206,26 @@ app.get('/api/settings', isAuthenticated, (req, res) => {
     }
 });
 
-// Маршрут для обслуживания фронтенда
-app.use(express.static(path.join(__dirname, '../frontend')));
+// Маршруты для фронтенда
 
-// Все остальные маршруты возвращают index.html (для поддержки SPA)
-app.get('*', (req, res) => {
+// Главная страница
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend', 'index.html'));
+});
+
+// Страница авторизации
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend', 'login.html'));
+});
+
+// Страница управления ботом
+app.get('/dashboard', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend', 'dashboard.html'));
+});
+
+// Все остальные маршруты возвращают 404
+app.get('*', (req, res) => {
+    res.status(404).send('Страница не найдена');
 });
 
 // Обработка ошибок

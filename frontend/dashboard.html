@@ -1,0 +1,43 @@
+<!-- frontend/dashboard.html -->
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление Ботом</title>
+    <link rel="stylesheet" href="styles/dashboard.css">
+</head>
+
+<body>
+    <h1>Панель Управления Ботом</h1>
+    <div id="user-info">
+        <h2>Привет, <span id="username"></span>!</h2>
+        <button id="logout-button">Выйти</button>
+    </div>
+
+    <h3>Настройки Бота</h3>
+    <form id="bot-settings-form">
+        <label for="guild-select">Выберите сервер:</label>
+        <select id="guild-select" required>
+            <option value="">--Выберите сервер--</option>
+        </select>
+
+        <br><br>
+
+        <label for="channel-select">Выберите голосовой канал:</label>
+        <select id="channel-select" required>
+            <option value="">--Выберите голосовой канал--</option>
+        </select>
+
+        <br><br>
+
+        <button type="submit">Сохранить настройки</button>
+    </form>
+
+    <div id="settings-status"></div>
+
+    <script src="scripts/dashboard.js"></script>
+</body>
+
+</html>
