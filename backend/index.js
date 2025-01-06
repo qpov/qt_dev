@@ -57,7 +57,7 @@ app.use('/styles', express.static(path.join(__dirname, '../frontend', 'styles'))
 app.use('/scripts', express.static(path.join(__dirname, '../frontend', 'scripts')));
 
 // Обслуживание favicon
-app.use('/favicon.png', express.static(path.join(__dirname, '../frontend/assets/favicon.png')));
+app.use('/favicon.ico', express.static(path.join(__dirname, '../frontend/assets/favicon.ico')));
 
 // Passport Discord Strategy
 passport.use(new DiscordStrategy({
