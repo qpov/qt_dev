@@ -35,7 +35,6 @@ fetch('/api/auth/user', { credentials: 'include' })
         console.error('Ошибка при получении информации о пользователе:', error);
     });
 
-// Функция загрузки списка серверов (гильдий)
 async function loadGuilds() {
     console.log('Загрузка списка гильдий');
     try {
@@ -58,7 +57,6 @@ async function loadGuilds() {
     }
 }
 
-// Обработчик изменения выбора сервера
 document.getElementById('guild-select').addEventListener('change', async function () {
     const guildId = this.value;
     const channelSelect = document.getElementById('channel-select');
@@ -86,7 +84,6 @@ document.getElementById('guild-select').addEventListener('change', async functio
     }
 });
 
-// Обработчик отправки формы настроек бота
 document.getElementById('bot-settings-form').addEventListener('submit', async function (event) {
     event.preventDefault();
 
@@ -131,19 +128,17 @@ document.getElementById('bot-settings-form').addEventListener('submit', async fu
     }
 });
 
-// Обработчик кнопки выхода
 document.getElementById('logout-button').addEventListener('click', async function () {
     console.log('Выход из сессии');
     try {
         await fetch('/api/auth/logout', { credentials: 'include' });
         hideUserInfo();
-        window.location.href = '/'; // Перенаправление на главную страницу
+        window.location.href = '/';
     } catch (error) {
         console.error('Ошибка при выходе:', error);
     }
 });
 
-// Функция загрузки текущих настроек пользователя
 async function loadSettings(userId) {
     console.log('Загрузка настроек пользователя:', userId);
     try {
@@ -159,15 +154,12 @@ async function loadSettings(userId) {
             const guildSelect = document.getElementById('guild-select');
             const channelSelect = document.getElementById('channel-select');
 
-            // Устанавливаем выбранный сервер
             guildSelect.value = settings.guildId;
             console.log('Установлен выбранный сервер:', settings.guildId);
 
-            // Триггерим событие изменения, чтобы загрузить голосовые каналы
             const changeEvent = new Event('change');
             guildSelect.dispatchEvent(changeEvent);
 
-            // Ждём загрузки каналов, затем устанавливаем выбранный голосовой канал
             const observer = new MutationObserver(() => {
                 if (channelSelect.querySelector(`option[value="${settings.voiceChannelId}"]`)) {
                     channelSelect.value = settings.voiceChannelId;

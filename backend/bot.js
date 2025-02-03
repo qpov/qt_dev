@@ -1,3 +1,5 @@
+// backend/bot.js
+
 const { Client, GatewayIntentBits, ChannelType, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -13,7 +15,7 @@ const client = new Client({
     ],
 });
 
-const createdChannels = new Map(); // Map для отслеживания созданных каналов (channelId -> userId)
+const createdChannels = new Map();
 
 client.once('ready', () => {
     console.log(`Бот вошёл как ${client.user.tag}`);
@@ -21,13 +23,11 @@ client.once('ready', () => {
     watchSettingsFile();
 });
 
-// Функция для инициализации
 function initializeChannels() {
     const allGuildSettings = settings.getAllGuildSettings();
     console.log('Инициализация настроек для гильдий:', allGuildSettings);
 }
 
-// Отслеживание изменений в settings.json
 function watchSettingsFile() {
     const settingsFilePath = path.join(__dirname, 'settings.json');
     fs.watchFile(settingsFilePath, () => {
@@ -35,10 +35,8 @@ function watchSettingsFile() {
     });
 }
 
-// Обработка событий voiceStateUpdate
 client.on('voiceStateUpdate', async (oldState, newState) => {
     try {
-        // Игнорируем события для бота
         if (newState.member.user.bot) return;
 
         const guildId = newState.guild.id;
@@ -51,11 +49,9 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
 
         const sourceChannelId = guildSetting.sourceVoiceChannelId;
 
-        // Проверяем, подключился ли пользователь к исходному голосовому каналу
         if (newState.channelId === sourceChannelId && oldState.channelId !== sourceChannelId) {
             console.log(`Пользователь ${newState.member.user.tag} подключился к исходному каналу.`);
 
-            // Проверяем, есть ли уже созданный канал для пользователя
             const existingChannelId = Array.from(createdChannels.entries())
                 .find(([channelId, uid]) => uid === newState.id)?.[0];
 
@@ -71,7 +67,6 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
                 }
             }
 
-            // Создаём новый канал
             const channelName = `${newState.member.user.username}'s Channel`;
             const newChannel = await createVoiceChannel(newState.guild, channelName, newState.channel.parentId);
             if (newChannel) {
@@ -81,7 +76,6 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
             }
         }
 
-        // Удаление пустых созданных каналов
         if (oldState.channelId && createdChannels.has(oldState.channelId)) {
             const channel = oldState.guild.channels.cache.get(oldState.channelId);
             if (channel && channel.members.size === 0) {
@@ -95,7 +89,6 @@ client.on('voiceStateUpdate', async (oldState, newState) => {
     }
 });
 
-// Функция для создания голосового канала
 async function createVoiceChannel(guild, name, parentId) {
     try {
         return await guild.channels.create({
@@ -115,7 +108,6 @@ async function createVoiceChannel(guild, name, parentId) {
     }
 }
 
-// Запуск бота
 client.login(process.env.DISCORD_BOT_TOKEN).catch(error => {
     console.error('Ошибка при подключении бота:', error);
 });

@@ -1,3 +1,5 @@
+// backend/settings.js
+
 const fs = require('fs');
 const path = require('path');
 
@@ -5,7 +7,6 @@ const settingsFile = path.join(__dirname, 'settings.json');
 
 let settings = {};
 
-// Загрузка настроек из файла, если он существует
 if (fs.existsSync(settingsFile)) {
     try {
         const data = fs.readFileSync(settingsFile, 'utf-8');
@@ -18,7 +19,6 @@ if (fs.existsSync(settingsFile)) {
     console.error('Файл settings.json не найден. Проверьте наличие файла.');
 }
 
-// Функция для сохранения настроек в файл
 function saveSettings() {
     try {
         fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
@@ -28,7 +28,6 @@ function saveSettings() {
     }
 }
 
-// Получить настройки пользователя по его ID
 function getUserSettings(userId) {
     console.log('Запрос настроек для пользователя:', userId);
     for (const guildId in settings.guilds) {
@@ -44,19 +43,16 @@ function getUserSettings(userId) {
     return null;
 }
 
-// Получить все настройки пользователей
 function getAllUserSettings() {
     console.log('Получение всех настроек пользователей');
     return settings.guilds || {};
 }
 
-// Получить все настройки гильдий
 function getAllGuildSettings() {
     console.log('Получение всех настроек гильдий');
     return settings.guilds || {};
 }
 
-// Установить настройки пользователя
 function setUserSettings(userId, guildId, voiceChannelId) {
     console.log('Установка настроек:', { userId, guildId, voiceChannelId });
 
@@ -70,13 +66,11 @@ function setUserSettings(userId, guildId, voiceChannelId) {
     saveSettings();
 }
 
-// Получить настройки гильдии
 function getGuildSettings(guildId) {
     console.log('Запрос настроек для гильдии:', guildId);
     return settings.guilds ? settings.guilds[guildId] : null;
 }
 
-// Установить исходный голосовой канал для гильдии
 function setSourceVoiceChannel(guildId, channelId) {
     console.log(`Установка исходного голосового канала для гильдии ${guildId}: ${channelId}`);
     if (!settings.guilds[guildId]) {
@@ -93,7 +87,7 @@ function setSourceVoiceChannel(guildId, channelId) {
 module.exports = {
     getUserSettings,
     getAllUserSettings,
-    getAllGuildSettings, // Добавлен экспорт метода
+    getAllGuildSettings,
     setUserSettings,
     getGuildSettings,
     setSourceVoiceChannel,

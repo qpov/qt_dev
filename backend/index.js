@@ -14,59 +14,48 @@ const { ChannelType } = require('discord.js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Подключаем бота и настройки
-const bot = require('./bot'); // Ваш Discord бот
-const settings = require('./settings'); // Ваш модуль настроек
+const bot = require('./bot');
+const settings = require('./settings');
 
-// Middleware для логирования всех запросов
 app.use((req, res, next) => {
     console.log(`Incoming request: ${req.method} ${req.url}`);
     next();
 });
 
-// Middleware для CORS
 app.use(cors({
-    origin: 'http://185.129.49.250', // Замените на ваш фронтенд домен
-    credentials: true, // Разрешить передачу куки
+    origin: 'http://185.129.49.250',
+    credentials: true,
 }));
 
-// Middleware для парсинга JSON
 app.use(bodyParser.json());
 
-// Middleware для логирования HTTP запросов
 app.use(morgan('combined'));
 
-// Middleware для сессий
 app.use(session({
     secret: process.env.SESSION_SECRET || 'your_default_secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Установите true, если используете HTTPS
+        secure: false,
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000, // 1 день
+        maxAge: 24 * 60 * 60 * 1000,
     },
 }));
 
-// Инициализация Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Обслуживание статических файлов
 app.use('/styles', express.static(path.join(__dirname, '../frontend', 'styles')));
 app.use('/scripts', express.static(path.join(__dirname, '../frontend', 'scripts')));
 
-// Обслуживание статических файлов для assets
 app.use('/assets', express.static(path.join(__dirname, '../frontend/assets')));
 
-// Passport Discord Strategy
 passport.use(new DiscordStrategy({
     clientID: process.env.DISCORD_CLIENT_ID,
     clientSecret: process.env.DISCORD_CLIENT_SECRET,
     callbackURL: process.env.DISCORD_CALLBACK_URL,
     scope: ['identify', 'email', 'guilds']
 }, (accessToken, refreshToken, profile, done) => {
-    // Добавляем информацию о гильдиях
     profile.guilds = profile.guilds || [];
     return done(null, profile);
 }));
@@ -79,13 +68,11 @@ passport.deserializeUser((obj, done) => {
     done(null, obj);
 });
 
-// Middleware для проверки аутентификации
 function isAuthenticated(req, res, next) {
     if (req.isAuthenticated()) return next();
     res.status(401).send('Не авторизован');
 }
 
-// Маршруты аутентификации
 app.get('/api/auth/discord', passport.authenticate('discord'));
 
 app.get('/api/auth/discord/callback', passport.authenticate('discord', { failureRedirect: '/' }),
@@ -112,7 +99,6 @@ app.get('/api/auth/user', (req, res) => {
     res.json(req.user);
 });
 
-// API для гильдий и каналов
 app.get('/api/guilds', isAuthenticated, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -125,7 +111,6 @@ app.get('/api/guilds', isAuthenticated, async (req, res) => {
                     guilds.push({ id: guild.id, name: guild.name });
                 }
             } catch (error) {
-                // Игнорируем гильдии, где пользователь не состоит
             }
         }
 
@@ -159,7 +144,6 @@ app.get('/api/guilds/:guildId/channels', isAuthenticated, async (req, res) => {
     }
 });
 
-// API для настроек пользователя
 app.post('/api/settings', isAuthenticated, async (req, res) => {
     try {
         const { guildId, voiceChannelId } = req.body;
@@ -178,7 +162,6 @@ app.post('/api/settings', isAuthenticated, async (req, res) => {
             return res.status(400).send('Выбранный канал не является голосовым');
         }
 
-        // Обновляем настройки
         settings.setSourceVoiceChannel(guildId, voiceChannelId);
         console.log(`Исходный голосовой канал для гильдии ${guildId} обновлён: ${voiceChannelId}`);
 
@@ -203,36 +186,28 @@ app.get('/api/settings', isAuthenticated, (req, res) => {
     }
 });
 
-// Маршруты для фронтенда
-
-// Главная страница
 app.get('/', (req, res) => {
     res.sendFile(path.resolve(__dirname, '../frontend/index.html'));
 });
 
-// Страница авторизации
 app.get('/login', (req, res) => {
     res.sendFile(path.resolve(__dirname, '../frontend/login.html'));
 });
 
-// Страница управления ботом
 app.get('/dashboard', isAuthenticated, (req, res) => {
     console.log('Обрабатывается маршрут /dashboard для пользователя:', req.user.id);
     res.sendFile(path.resolve(__dirname, '../frontend/dashboard.html'));
 });
 
-// Все остальные маршруты возвращают 404
 app.get('*', (req, res) => {
-    res.status(404).sendFile(path.resolve(__dirname, '../frontend/404.html')); // Убедитесь, что 404.html существует
+    res.status(404).sendFile(path.resolve(__dirname, '../frontend/404.html'));
 });
 
-// Обработка ошибок
 app.use((err, req, res, next) => {
     console.error('Произошла ошибка:', err.stack);
     res.status(500).send('Что-то пошло не так!');
 });
 
-// Запуск сервера
-app.listen(PORT, '0.0.0.0', () => { // Добавлен '0.0.0.0' для прослушивания на всех интерфейсах
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Сервер запущен на порту ${PORT}`);
 });
